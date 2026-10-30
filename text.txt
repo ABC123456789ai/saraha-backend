@@ -1,0 +1,240 @@
+# Authentication, Token, and Bearer Token
+
+# 1. Authentication
+
+# Definition
+
+Authentication :is the process of verifying the identity of a user or system.
+
+In simple words, Authentication answers the question:
+
+Who are you?
+
+The server needs to make sure that the person making a request is actually the user they claim to be.
+
+ Example
+
+When a user logs into an application, they usually provide:
+
+ Email or username
+ Password
+
+For example:
+
+http
+POST /login
+
+
+json
+{
+  "email": "user@example.com",
+  "password": "123456"
+}
+
+
+The server checks whether the provided credentials are correct.
+
+If the credentials are valid:
+
+text
+Authentication Successful
+
+
+If they are invalid:
+
+text
+Authentication Failed
+
+
+### Why is Authentication important?
+
+Authentication is important because it prevents unauthorized users from accessing accounts and protected resources.
+
+For example, an application may have a protected endpoint:
+
+http
+GET /profile
+
+The server should not allow an unauthenticated user to access private profile information.
+
+
+# 2. Token
+
+# Definition
+
+A Token :is a value generated and provided by the server after successfully authenticating a user.
+
+The client can use this token in subsequent requests to prove that the user has already been authenticated.
+
+Instead of sending the email and password with every request, the user logs in once and receives a token.
+
+### Authentication Flow
+
+The basic flow is:
+
+text
+User
+  ↓
+Login with Email + Password
+  ↓
+Server verifies credentials
+  ↓
+Authentication Successful
+  ↓
+Server generates a Token
+  ↓
+Client receives the Token
+  ↓
+Client uses the Token in future requests
+
+Example
+
+After a successful login, the server may return:
+
+json
+{
+  "accessToken": "abc123xyz789"
+}
+
+
+The client stores the token and uses it when accessing protected resources.
+
+For example:
+
+http
+GET /profile
+
+
+with the token included in the request.
+
+### Why are Tokens used?
+
+Tokens are used to:
+
+* Authenticate users after login.
+* Access protected API endpoints.
+* Avoid sending the user's password with every request.
+* Maintain authentication between multiple requests.
+
+---
+
+## 3. Bearer Token
+
+### Definition
+
+A **Bearer Token** is a token that is sent with an HTTP request to authenticate the client.
+
+The token is commonly sent through the HTTP `Authorization` header using the `Bearer` authentication scheme.
+
+The standard format is:
+
+```http
+Authorization: Bearer <token>
+```
+
+### Example
+
+If the user's token is:
+
+```text
+abc123xyz789
+```
+
+The request would contain:
+
+```http
+GET /profile
+Authorization: Bearer abc123xyz789
+```
+
+The server receives the `Authorization` header, extracts the token, and verifies it.
+
+If the token is valid, the server can identify the authenticated user and allow access to the protected resource.
+
+---
+
+## 4. Token vs. Bearer Token
+
+The difference is mainly in how the token is being used or sent.
+
+### Token
+
+A token is the actual value used to represent or authenticate the user.
+
+Example:
+
+```text
+abc123xyz789
+```
+
+### Bearer Token
+
+A Bearer Token refers to sending that token using the `Authorization` header with the `Bearer` scheme.
+
+Example:
+
+http
+Authorization: Bearer abc123xyz789
+
+So:
+
+text
+Token
+  ↓
+abc123xyz789
+
+
+while:
+
+text
+Bearer Token
+  ↓
+Authorization: Bearer abc123xyz789
+
+
+## 5. Authentication vs. Authorization
+
+Authentication and Authorization are related but they are not the same.
+
+# Authentication
+
+Authentication answers:
+
+Who are you?
+
+Example:
+
+text
+The server verifies that the user is Ammar.
+
+
+# Authorization
+
+Authorization answers:
+
+What are you allowed to do?
+
+For example, the server may know that the user is authenticated, but the user may not have permission to access an admin endpoint.
+
+```text
+Authentication: User is authenticated 
+Authorization: User is not an Admin 
+```
+
+ Simple Example
+
+Imagine a company system:
+
+1. You log in with your email and password.
+2. The server verifies your identity.
+3. You receive a token.
+4. You use the token to access protected resources.
+5. The server checks your permissions before allowing specific actions.
+
+Therefore:
+
+text
+Authentication → Who are you?
+Authorization  → What can you access?
+Token          → A value used to prove authentication.
+Bearer Token   → A common way to send the token in HTTP requests.
