@@ -1,11 +1,17 @@
 const errorHandler = (err, req, res, next) => {
   console.error(err);
-
-  return res.status(err.cause?.status || 500).json({
+  const statusCode = err.cause?.status || 500;
+  const isProduction = process.env.NODE_ENV === "production";
+  return res.status(statusCode).json({
     success: false,
-    message: err.message || "Internal Server Error",
-    extra: err.cause?.extra,
+    message:
+      isProduction && statusCode === 500
+        ? "Internal Server Error"
+        : err.message || "Internal Server Error",
+
+    ...(err.cause?.extra && {
+      extra: err.cause.extra,
+    }),
   });
 };
-
 export default errorHandler;
