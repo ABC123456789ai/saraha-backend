@@ -1,15 +1,35 @@
 import * as authService from "../services/auth.service.js";
-
-const login = async (req, res, next) => {
+const register = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-
-    const result = await authService.loginUser(
+    const { name, email, password } = req.body;
+    const user = await authService.registerUser(
+      name,
       email,
       password
     );
 
-    // 2FA required
+    return res.status(201).json({
+      success: true,
+      message: "Registration successful. Please verify your email.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Login
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const result = await authService.loginUser(email, password);
+
     if (result.requiresTwoFactor) {
       return res.status(200).json({
         message: "Two-factor authentication required",
@@ -110,11 +130,7 @@ const resetPassword = async (req, res, next) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    await authService.resetPassword(
-      email,
-      otp,
-      newPassword
-    );
+    await authService.resetPassword(email, otp, newPassword);
 
     return res.status(200).json({
       message: "Password reset successfully",
@@ -123,12 +139,6 @@ const resetPassword = async (req, res, next) => {
     next(error);
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| Two-Factor Authentication
-|--------------------------------------------------------------------------
-*/
 
 const enableTwoFactor = async (req, res, next) => {
   try {
@@ -162,13 +172,8 @@ const verifyTwoFactorSetup = async (req, res, next) => {
 const confirmTwoFactorLogin = async (req, res, next) => {
   try {
     const { userId, otp } = req.body;
-
     const { user, token } =
-      await authService.confirmTwoFactorLogin(
-        userId,
-        otp
-      );
-
+      await authService.confirmTwoFactorLogin(userId, otp);
     const { password: _, ...userWithoutPassword } =
       user.toObject();
 
@@ -183,6 +188,7 @@ const confirmTwoFactorLogin = async (req, res, next) => {
 };
 
 export {
+  register,
   login,
   logout,
   confirmEmail,

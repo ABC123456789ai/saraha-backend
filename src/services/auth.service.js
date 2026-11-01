@@ -1,3 +1,4 @@
+
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -11,6 +12,7 @@ const generateOtp = () => {
   return crypto.randomInt(100000, 1000000).toString();
 };
 
+// Email Verification OTP
 const sendVerificationOtp = async (user) => {
   const otp = generateOtp();
 
@@ -33,6 +35,30 @@ const sendVerificationOtp = async (user) => {
   );
 };
 
+// Register
+const registerUser = async (name, email, password) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existingUser = await getUserByEmail(normalizedEmail);
+
+  if (existingUser) {
+    throw new Error("Email already registered");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await User.create({
+    name,
+    email: normalizedEmail,
+    password: hashedPassword,
+  });
+
+  await sendVerificationOtp(user);
+
+  return user;
+};
+
+// Confirm Email
 const confirmEmail = async (email, otp) => {
   const user = await getUserByEmail(email);
 
@@ -65,6 +91,7 @@ const confirmEmail = async (email, otp) => {
   return user;
 };
 
+// Resend Verification OTP
 const resendVerificationOtp = async (email) => {
   const user = await getUserByEmail(email);
 
@@ -111,6 +138,7 @@ const resendVerificationOtp = async (email) => {
   });
 };
 
+// Enable Two Factor
 const enableTwoFactor = async (userId) => {
   const user = await User.findById(userId);
 
@@ -143,6 +171,7 @@ const enableTwoFactor = async (userId) => {
   );
 };
 
+// Verify Two Factor Setup
 const verifyTwoFactorSetup = async (userId, otp) => {
   const user = await User.findById(userId);
 
@@ -173,6 +202,7 @@ const verifyTwoFactorSetup = async (userId, otp) => {
   await user.save();
 };
 
+// Confirm Two Factor Login
 const confirmTwoFactorLogin = async (userId, otp) => {
   const user = await User.findById(userId);
 
@@ -218,15 +248,18 @@ const confirmTwoFactorLogin = async (userId, otp) => {
   };
 };
 
+// Login
 const loginUser = async (email, password) => {
-  const user = await getUserByEmail(email);
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await getUserByEmail(normalizedEmail);
 
   if (!user) {
     throw new Error("Invalid email or password");
   }
 
-  const attemptsKey = `login-attempts:${email}`;
-  const banKey = `login-ban:${email}`;
+  const attemptsKey = `login-attempts:${normalizedEmail}`;
+  const banKey = `login-ban:${normalizedEmail}`;
 
   const isBanned = await redisService.get(banKey);
 
@@ -269,6 +302,9 @@ const loginUser = async (email, password) => {
 
   await redisService.del(attemptsKey);
 
+  if (!user.emailVerified) {
+    throw new Error("Please verify your email before logging in");
+  }
 
   if (user.twoFactorEnabled) {
     const otp = generateOtp();
@@ -314,12 +350,14 @@ const loginUser = async (email, password) => {
   };
 };
 
+// Logout / Revoke Token
 const revokeToken = async (token) => {
   await redisService.set(`revoked:${token}`, "true", {
     EX: 3600,
   });
 };
 
+// Forgot Password
 const forgotPassword = async (email) => {
   const user = await getUserByEmail(email);
 
@@ -348,6 +386,7 @@ const forgotPassword = async (email) => {
   );
 };
 
+// Verify Forgot Password OTP
 const verifyForgotPasswordOtp = async (email, otp) => {
   const user = await getUserByEmail(email);
 
@@ -370,6 +409,7 @@ const verifyForgotPasswordOtp = async (email, otp) => {
   return user;
 };
 
+// Reset Password
 const resetPassword = async (email, otp, newPassword) => {
   const user = await getUserByEmail(email);
 
@@ -392,7 +432,6 @@ const resetPassword = async (email, otp, newPassword) => {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   user.password = hashedPassword;
-
   user.passwordResetOtp = undefined;
   user.passwordResetOtpExpiresAt = undefined;
 
@@ -400,6 +439,7 @@ const resetPassword = async (email, otp, newPassword) => {
 };
 
 export {
+  registerUser,
   loginUser,
   revokeToken,
 
